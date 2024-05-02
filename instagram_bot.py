@@ -12,11 +12,10 @@ class PersonInfo():
         self.is_private  = False
         self.n_followers = 0
         self.n_following = 0
+        self.n_posts     = 0
 
-def fetch(people_type, account, max_people, driver: webdriver.Chrome):
+def fetch(people_type, account, max_people, existing_followers: list, driver: webdriver.Chrome):
     driver.get(f"https://www.instagram.com/{account}/{people_type}/")
-
-    cookie.load(driver)
 
     time.sleep(5)
 
@@ -32,41 +31,52 @@ def fetch(people_type, account, max_people, driver: webdriver.Chrome):
 
     scroll_origin = ScrollOrigin.from_element(followers_div)
 
-    prev_num_of_followers = 0
-    while True:
-        ActionChains(driver=driver).scroll_from_origin(scroll_origin=scroll_origin, delta_x=0, delta_y=5000).perform()
-        time.sleep(10)
-
-        followers_elem = followers_div.find_elements(By.TAG_NAME, "a")
-
-        if len(followers_elem) > max_people:
-            print("Max number of followers are reached.")
-            break
-
-        if prev_num_of_followers == len(followers_elem):
-            print("There are no more followers to fetch")
-            break
-
-        prev_num_of_followers = len(followers_elem)
-
     followers = []
+    while True:
+        try:
+            time.sleep(10)
 
-    for follower_elem in followers_elem:
-        if len(follower_elem.text) == 0:
-            continue
+            followers_elem = followers_div.find_elements(By.TAG_NAME, "a")
 
-        followers.append(follower_elem.text)
+            before = len(followers)
+            for follower_elem in followers_elem:
+                if len(follower_elem.text) == 0:
+                    continue
+
+                person = follower_elem.text
+
+                if followers.count(person) > 0:
+                    continue
+
+                if not existing_followers.count(follower_elem.text):
+                    followers.append(follower_elem.text)
+                else:
+                    print(f"{person} already contained in the existing followers, so leaving.")
+                    return followers
+
+            after = len(followers)
+
+            if len(followers) > max_people:
+                print(f"Max number of followers are reached for {account}.")
+                break
+
+            if before == after:
+                print("There are no more followers to fetch")
+                break
+
+            ActionChains(driver=driver).scroll_from_origin(scroll_origin=scroll_origin, delta_x=0, delta_y=5000).perform()
+        except Exception as e:
+            print(e)
+            break
 
     return followers
 
 def follow_person_with_criteria(account, criteria, driver: webdriver.Chrome):
     driver.get(f"https://www.instagram.com/{account}")
 
-    cookie.load(driver)
-
-    time.sleep(10)
-
     person = PersonInfo()
+
+    time.sleep(30)
 
     try:
         driver.find_element(By.XPATH, "//*[contains(text(), 'This account is private')]")
@@ -75,13 +85,21 @@ def follow_person_with_criteria(account, criteria, driver: webdriver.Chrome):
         pass
 
     try:
-        n_followers_container = driver.find_element(By.XPATH, "//*[contains(text(), 'followers')]")
-        n_following_container = driver.find_element(By.XPATH, "//*[contains(text(), 'following')]")
-        
-        n_followers_elem = n_followers_container.find_element(By.TAG_NAME, "span")
-        n_following_elem = n_following_container.find_element(By.TAG_NAME, "span")
-        person.n_followers = int(n_followers_elem.text.replace(',',''))
-        person.n_following = int(n_following_elem.text.replace(',', ''))
+        try:
+            n_followers_elem = driver.find_element(By.XPATH, "//*[contains(text(), 'followers')]").find_element(By.TAG_NAME, "span")
+        except:
+            n_followers_elem = driver.find_element(By.XPATH, "//*[contains(text(), 'follower')]").find_element(By.TAG_NAME, "span")
+
+        n_following_elem = driver.find_element(By.XPATH, "//*[contains(text(), 'following')]").find_element(By.TAG_NAME, "span")
+
+        try:
+            n_posts_elem     = driver.find_element(By.XPATH, "//*[contains(text(), 'posts')]").find_element(By.TAG_NAME, "span")
+        except:
+            n_posts_elem     = driver.find_element(By.XPATH, "//*[contains(text(), 'post')]").find_element(By.TAG_NAME, "span")
+
+        person.n_followers = int(n_followers_elem.text.replace(',', '').replace('.','').replace('M','').replace('K',''))
+        person.n_following = int(n_following_elem.text.replace(',', '').replace('.','').replace('M','').replace('K',''))
+        person.n_posts     = int(n_posts_elem.text.replace(',', '').replace('.','').replace('M','').replace('K',''))
     except:
         pass
 
@@ -94,10 +112,12 @@ def follow_person_with_criteria(account, criteria, driver: webdriver.Chrome):
             print(f'Followed {account}, following: {person.n_following}, followers: {person.n_followers}, private: {person.is_private}')
 
             time.sleep(4)
+
+            return True
         except:
             pass
 
-    return person
+    return False
 
 def login(driver: webdriver.Chrome):
     driver.get("https://www.instagram.com")
