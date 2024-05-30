@@ -156,7 +156,7 @@ if __name__ == "__main__":
             followers = instagram_bot.fetch(
                 people_type        = "followers",
                 account            = page,
-                max_people         = n_max_people,
+                max_people         = 200,
                 existing_followers = existing_followers,
                 driver             = driver
             )
