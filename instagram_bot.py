@@ -20,12 +20,17 @@ def fetch(people_type, account, max_people, existing_followers: list, driver: we
     time.sleep(5)
 
     try:
-        element = driver.find_element(By.XPATH, "//*[contains(text(), 'Not Now')]")
+        element = driver.find_element(By.XPATH, f"//*[contains(text(), '{people_type}')]")
         element.click()
     except:
         pass
 
-    followers_div = driver.find_element(By.CLASS_NAME, "_aano")
+    time.sleep(10)
+
+    try:
+        followers_div = driver.find_element(By.CLASS_NAME, "_aano")
+    except:
+        return []
 
     time.sleep(3)
 
@@ -71,7 +76,7 @@ def fetch(people_type, account, max_people, existing_followers: list, driver: we
 
     return followers
 
-def follow_person_with_criteria(account, criteria, driver: webdriver.Chrome):
+def follow_person_with_criteria(account, criteria, ignored_names: list, driver: webdriver.Chrome):
     driver.get(f"https://www.instagram.com/{account}")
 
     person = PersonInfo()
@@ -81,6 +86,19 @@ def follow_person_with_criteria(account, criteria, driver: webdriver.Chrome):
     try:
         driver.find_element(By.XPATH, "//*[contains(text(), 'This account is private')]")
         person.is_private = True
+    except:
+        pass
+
+    try:
+        user_description = driver.find_element(By.CLASS_NAME, "x7a106z").text
+        tokens = user_description.split()
+
+        if len(tokens) > 0:
+            first_name =  tokens[0].lower()
+
+            for ignored_name in ignored_names:
+                if first_name.startswith(ignored_name):
+                    return False
     except:
         pass
 

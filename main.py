@@ -76,10 +76,10 @@ def follow_criteria(info: instagram_bot.PersonInfo):
     return  info.is_private and \
             follow_ratio < 2.1 and \
             follow_ratio > 0.5 and \
-            info.n_followers > 25 and \
-            info.n_following > 25 and \
-            info.n_followers < 1000 and \
-            info.n_posts > 4
+            info.n_followers > 100 and \
+            info.n_following > 100 and \
+            info.n_followers < 1200 and \
+            info.n_posts >= 5
 
 def followers_fp(account):
     return f"{account}/followers"
@@ -125,13 +125,27 @@ if __name__ == "__main__":
         print("=======================")
         print('\n'.join(people_dont_follow_you))
     elif args.program == "smart-follow":
-        pages             = args.pages
+        pages             = read_input_list("targetpages.txt")
         remaining_pages   = len(pages)
-        n_max_people      = 200
+        n_max_people      = 1000
 
         driver.get("https://www.instagram.com")
         cookie.load(driver)
+        random.seed()
         random.shuffle(pages)
+
+        print(pages)
+
+        ignored_names = read_input_list("ignored-names.txt")
+
+        ignored_names_lower = []
+
+        for ignored_name in ignored_names:
+            ignored_names_lower.append(ignored_name.lower())
+
+        inspected_followers = []
+        for page in pages:
+            inspected_followers.extend(read_input_list(inspected_fp(account=page)))
 
         n_inspected_people = 0
         for page in pages:
@@ -151,7 +165,6 @@ if __name__ == "__main__":
                 append_ln(follower, f"{followers_fp(account=page)}")
 
             followers = read_input_list(followers_fp(account=page))
-            inspected_followers = read_input_list(inspected_fp(account=page))
 
             for follower in followers:
                 inspected = inspected_followers.count(follower) > 0
@@ -163,6 +176,7 @@ if __name__ == "__main__":
                     if instagram_bot.follow_person_with_criteria(
                         account=follower,
                         criteria=follow_criteria,
+                        ignored_names=ignored_names_lower,
                         driver=driver
                     ):
                         append_ln(follower, f"{page}/followed")
