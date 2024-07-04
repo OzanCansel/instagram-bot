@@ -28,7 +28,7 @@ def fetch(people_type, account, max_people, existing_followers: list, driver: we
     time.sleep(10)
 
     try:
-        followers_div = driver.find_element(By.CLASS_NAME, "_aano")
+        followers_div = driver.find_element(By.CLASS_NAME, "xyi19xy")
     except:
         return []
 
@@ -129,7 +129,7 @@ def follow_person_with_criteria(account, criteria, ignored_names: list, driver: 
 
             print(f'Followed {account}, following: {person.n_following}, followers: {person.n_followers}, private: {person.is_private}')
 
-            time.sleep(4)
+            time.sleep(6)
 
             return True
         except:

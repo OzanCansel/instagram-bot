@@ -73,13 +73,24 @@ def follow_criteria(info: instagram_bot.PersonInfo):
 
     follow_ratio = (info.n_followers / info.n_following)
 
+    if info.is_private and \
+       info.n_posts >= 50:
+        return True
+
+    if info.is_private and \
+       info.n_followers > 500 and \
+       follow_ratio > 0.2 and \
+       follow_ratio < 5 and \
+       info.n_posts >= 4:
+        return True
+
     return  info.is_private and \
-            follow_ratio < 2.1 and \
-            follow_ratio > 0.5 and \
+            follow_ratio < 3.0 and \
+            follow_ratio > 0.3 and \
             info.n_followers > 100 and \
             info.n_following > 100 and \
             info.n_followers < 1200 and \
-            info.n_posts >= 5
+            info.n_posts >= 3
 
 def followers_fp(account):
     return f"{account}/followers"
@@ -127,7 +138,7 @@ if __name__ == "__main__":
     elif args.program == "smart-follow":
         pages             = read_input_list("targetpages.txt")
         remaining_pages   = len(pages)
-        n_max_people      = 1000
+        n_max_people      = 1000000
 
         driver.get("https://www.instagram.com")
         cookie.load(driver)
